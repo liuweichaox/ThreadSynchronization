@@ -1,0 +1,15 @@
+﻿<Window x:Class="BackgroundWorkerDemo.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:BackgroundWorkerDemo"
+        mc:Ignorable="d"
+        Title="MainWindow" Height="450" Width="800">
+    <Grid>
+        <Label x:Name="resultLabel" Content="" HorizontalAlignment="Left" Margin="54,121,0,0" VerticalAlignment="Top"/>
+        <Button x:Name="startAsyncButton" Content="Start" HorizontalAlignment="Left" Margin="217,252,0,0" VerticalAlignment="Top" Height="46" Width="129" Click="startAsyncButton_Click"/>
+        <Button x:Name="cancelAsyncButton" Content="Cancel" HorizontalAlignment="Left" Margin="479,252,0,0" VerticalAlignment="Top" Height="46" Width="129" Click="cancelAsyncButton_Click"/>
+
+    </Grid>
+</Window>
