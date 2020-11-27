@@ -11,9 +11,10 @@ namespace AutoResetEventDemo
         static void Main()
         {
             Console.WriteLine("按Enter键创建三个线程并启动它们.\r\n" +
-                            "这些线程等待在信号状态下创建的AutoResetEvent #1，\r\n" +
-                            "所以第一个线程被释放.\r\n" +
-                            "这使AutoResetEvent #1进入无信号状态。\r\n");
+                "这些线程在AutoResetEvent #1上等待，\r\n" +
+                "AutoResetEvent #1是在信号状态下创建的，\r\n" +
+                "因此第一个线程被释放.\r\n" +
+                "这使AutoResetEvent #1进入未信号状态.\r\n");
             Console.ReadLine();
 
             for (int i = 1; i < 4; i++)
