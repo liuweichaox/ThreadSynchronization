@@ -1,118 +1,122 @@
 ﻿using System;
 using System.Threading;
 
-namespace EventWaitHandleDemo
+public class Example
 {
-    class Program
+    // The EventWaitHandle used to demonstrate the difference
+    // between AutoReset and ManualReset synchronization events.
+    //
+    private static EventWaitHandle ewh;
+
+    // A counter to make sure all threads are started and
+    // blocked before any are released. A Long is used to show
+    // the use of the 64-bit Interlocked methods.
+    //
+    private static long threadCount = 0;
+
+    // An AutoReset event that allows the main thread to block
+    // until an exiting thread has decremented the count.
+    //
+    private static EventWaitHandle clearCount =
+        new EventWaitHandle(false, EventResetMode.AutoReset);
+
+    [MTAThread]
+    public static void Main()
     {
-        // 用于展示差异的EventWaitHandle。
-        // 在AutoReset和ManualReset同步事件之间。
+        // Create an AutoReset EventWaitHandle.
         //
-        private static EventWaitHandle ewh;
+        ewh = new EventWaitHandle(false, EventResetMode.AutoReset);
 
-        // 一个计数器，以确保所有线程的启动和
-        //在任何一个被释放之前被阻止。长号是用来显示
-        // 使用64位的Interlocked方法。
-        //
-        private static long threadCount = 0;
-
-        // 一个允许主线程阻塞的AutoReset事件。
-        // 直到一个退出的线程减少了计数。
-        //
-        private static EventWaitHandle clearCount =
-            new EventWaitHandle(false, EventResetMode.AutoReset);
-
-        [MTAThread]
-        public static void Main()
+        // Create and start five numbered threads. Use the
+        // ParameterizedThreadStart delegate, so the thread
+        // number can be passed as an argument to the Start 
+        // method.
+        for (int i = 0; i <= 4; i++)
         {
-            // 创建一个AutoReset EventWaitHandle。
-            //
-            ewh = new EventWaitHandle(false, EventResetMode.AutoReset);
+            Thread t = new Thread(
+                new ParameterizedThreadStart(ThreadProc)
+            );
+            t.Start(i);
+        }
 
-            // 创建并启动五个编号的线程。使用
-            // 参数化的ThreadStart委托，所以线程的
-            // 可以将数字作为参数传递给Start 
-            //方法。
-            for (int i = 0; i <= 4; i++)
-            {
-                Thread t = new Thread(
-                    new ParameterizedThreadStart(ThreadProc)
-                );
-                t.Start(i);
-            }
+        // Wait until all the threads have started and blocked.
+        // When multiple threads use a 64-bit value on a 32-bit
+        // system, you must access the value through the
+        // Interlocked class to guarantee thread safety.
+        //
+        while (Interlocked.Read(ref threadCount) < 5)
+        {
+            Thread.Sleep(500);
+        }
 
-            // 等到所有的线程都已经启动并阻塞。
-            // 当多个线程在32位上使用一个64位的值时，就会在32位的
-            // 系统，必须通过Interlocked类访问该值以保证线程安全。            
-            while (Interlocked.Read(ref threadCount) < 5)
-            {
-                Thread.Sleep(500);
-            }
-
-            // 每当用户按下ENTER键时，释放一个线程。
-            // 直到所有线程都被释放。
-            //
-            while (Interlocked.Read(ref threadCount) > 0)
-            {
-                Console.WriteLine("Press ENTER to release a waiting thread.");
-                Console.ReadLine();
-
-                // SignalAndWait向EventWaitHandle发出信号，
-                // 在重置前正好释放一个线程，
-                // 因为它是用AutoReset模式创建的。
-                // 然后，SignalAndWait在clearCount上阻塞，
-                // 以允许被信号的线程在再次循环之前减少计数。
-                WaitHandle.SignalAndWait(ewh, clearCount);
-            }
-            Console.WriteLine();
-
-            // 创建一个ManualReset EventWaitHandle。
-            //
-            ewh = new EventWaitHandle(false, EventResetMode.ManualReset);
-
-            // 再创建并启动五个编号线程。
-            //
-            for (int i = 0; i <= 4; i++)
-            {
-                Thread t = new Thread(
-                    new ParameterizedThreadStart(ThreadProc)
-                );
-                t.Start(i);
-            }
-
-            // 等到所有的线程都已经开始并被阻止。
-            //
-            while (Interlocked.Read(ref threadCount) < 5)
-            {
-                Thread.Sleep(500);
-            }
-
-            // 因为EventWaitHandle是用ManualReset模式创建的，
-            // 所以发出信号释放所有等待的线程。
-            Console.WriteLine("Press ENTER to release the waiting threads.");
+        // Release one thread each time the user presses ENTER,
+        // until all threads have been released.
+        //
+        while (Interlocked.Read(ref threadCount) > 0)
+        {
+            Console.WriteLine("Press ENTER to release a waiting thread.");
             Console.ReadLine();
-            ewh.Set();
-        }
 
-        public static void ThreadProc(object data)
+            // SignalAndWait signals the EventWaitHandle, which
+            // releases exactly one thread before resetting, 
+            // because it was created with AutoReset mode. 
+            // SignalAndWait then blocks on clearCount, to 
+            // allow the signaled thread to decrement the count
+            // before looping again.
+            //
+            WaitHandle.SignalAndWait(ewh, clearCount);
+        }
+        Console.WriteLine();
+
+        // Create a ManualReset EventWaitHandle.
+        //
+        ewh = new EventWaitHandle(false, EventResetMode.ManualReset);
+
+        // Create and start five more numbered threads.
+        //
+        for (int i = 0; i <= 4; i++)
         {
-            int index = (int)data;
-
-            Console.WriteLine("Thread {0} blocks.", data);
-            //增加阻塞线程的数量。
-            Interlocked.Increment(ref threadCount);
-
-            // 等待事件的发生。
-            ewh.WaitOne();
-
-            Console.WriteLine("Thread {0} exits.", data);
-            //减少阻塞线程的数量。
-            Interlocked.Decrement(ref threadCount);
-
-            // 发出信号ewh后，
-            // 主线程在clearCount上阻塞，
-            // 直到被信号的线程减少了计数。现在发出信号。
-            clearCount.Set();
+            Thread t = new Thread(
+                new ParameterizedThreadStart(ThreadProc)
+            );
+            t.Start(i);
         }
+
+        // Wait until all the threads have started and blocked.
+        //
+        while (Interlocked.Read(ref threadCount) < 5)
+        {
+            Thread.Sleep(500);
+        }
+
+        // Because the EventWaitHandle was created with
+        // ManualReset mode, signaling it releases all the
+        // waiting threads.
+        //
+        Console.WriteLine("Press ENTER to release the waiting threads.");
+        Console.ReadLine();
+        ewh.Set();
+    }
+
+    public static void ThreadProc(object data)
+    {
+        int index = (int)data;
+
+        Console.WriteLine("Thread {0} blocks.", data);
+        // Increment the count of blocked threads.
+        Interlocked.Increment(ref threadCount);
+
+        // Wait on the EventWaitHandle.
+        ewh.WaitOne();
+
+        Console.WriteLine("Thread {0} exits.", data);
+        // Decrement the count of blocked threads.
+        Interlocked.Decrement(ref threadCount);
+
+        // After signaling ewh, the main thread blocks on
+        // clearCount until the signaled thread has 
+        // decremented the count. Signal it now.
+        //
+        clearCount.Set();
     }
 }

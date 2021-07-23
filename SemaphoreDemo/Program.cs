@@ -1,72 +1,73 @@
 ﻿using System;
 using System.Threading;
 
-namespace SemaphoreDemo
+public class Example
 {
-    class Program
+    // A semaphore that simulates a limited resource pool.
+    //
+    private static Semaphore _pool;
+
+    // A padding interval to make the output more orderly.
+    private static int _padding;
+
+    public static void Main()
     {
-        //模拟有限资源池的信号量。
-        private static Semaphore _pool;
+        // Create a semaphore that can satisfy up to three
+        // concurrent requests. Use an initial count of zero,
+        // so that the entire semaphore count is initially
+        // owned by the main program thread.
+        //
+        _pool = new Semaphore(0, 3);
 
-        // 一个填充间隔，使输出更有序。
-        private static int _padding;
-
-        public static void Main()
+        // Create and start five numbered threads. 
+        //
+        for (int i = 1; i <= 5; i++)
         {
-            //创建最多可以满足三个并发请求的信号量。
-            //使用初始计数为零，
-            //这样整个信号量计数最初由主程序线程拥有。
+            Thread t = new Thread(new ParameterizedThreadStart(Worker));
+
+            // Start the thread, passing the number.
             //
-            _pool = new Semaphore(0, 3);
-
-            //创建并启动五个编号的线程。
-            //
-            for (int i = 1; i <= 5; i++)
-            {
-                Thread t = new Thread(new ParameterizedThreadStart(Worker));
-
-                //启动线程，传递数字。
-                //
-                t.Start(i);
-            }
-
-            //等待半秒，
-            //以允许所有线程在该信号量上启动和阻塞。
-            //
-            Thread.Sleep(500);
-
-            //主线程开始时持有整个信号量计数。
-            //调用Release(3)将信号量计数恢复到最大值，
-            //并允许等待的线程进入信号量，
-            //每次最多三个线程。
-            //
-            Console.WriteLine("主线程调用 Release(3).");
-            _pool.Release(3);
-
-            Console.WriteLine("主线程推出.");
+            t.Start(i);
         }
 
-        private static void Worker(object num)
-        {
-            //每个工作线程都从请求信号量开始。
-            Console.WriteLine("线程 {0} 开始 " +
-                "等待信号量.", num);
-            _pool.WaitOne();
+        // Wait for half a second, to allow all the
+        // threads to start and to block on the semaphore.
+        //
+        Thread.Sleep(500);
 
-            // 一个填充间隔，使输出更有序。
-            int padding = Interlocked.Add(ref _padding, 100);
+        // The main thread starts out holding the entire
+        // semaphore count. Calling Release(3) brings the 
+        // semaphore count back to its maximum value, and
+        // allows the waiting threads to enter the semaphore,
+        // up to three at a time.
+        //
+        Console.WriteLine("Main thread calls Release(3).");
+        _pool.Release(3);
 
-            Console.WriteLine("线程 {0} 进入信号量.", num);
+        Console.WriteLine("Main thread exits.");
+    }
 
-            //线程的“工作”包括睡眠大约1秒。
-            //每个线程“工作”的时间稍微长一些，
-            //只是为了使输出更有序。
-            //
-            Thread.Sleep(1000 + padding);
+    private static void Worker(object num)
+    {
+        // Each worker thread begins by requesting the
+        // semaphore.
+        Console.WriteLine("Thread {0} begins " +
+            "and waits for the semaphore.", num);
+        _pool.WaitOne();
 
-            Console.WriteLine("线程 {0} 释放信号量", num);
-            Console.WriteLine("线程 {0} 之前的信号量计数: {1}",
-                num, _pool.Release());
-        }
+        // A padding interval to make the output more orderly.
+        int padding = Interlocked.Add(ref _padding, 100);
+
+        Console.WriteLine("Thread {0} enters the semaphore.", num);
+
+        // The thread's "work" consists of sleeping for 
+        // about a second. Each thread "works" a little 
+        // longer, just to make the output more orderly.
+        //
+        Thread.Sleep(1000 + padding);
+
+        Console.WriteLine("Thread {0} releases the semaphore.", num);
+        Console.WriteLine("Thread {0} previous semaphore count: {1}",
+            num, _pool.Release());
     }
 }

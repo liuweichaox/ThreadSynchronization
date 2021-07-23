@@ -1,61 +1,71 @@
 ﻿using System;
 using System.Threading;
 
-namespace MutexDemo
+class Example
 {
-    class Program
+    // Create a new Mutex. The creating thread does not own the mutex.
+    private static Mutex mut = new Mutex();
+    private const int numIterations = 1;
+    private const int numThreads = 3;
+
+    static void Main()
     {
-        // 创建一个新的Mutex。创建的线程不拥有Mutex。
-        private static Mutex mut = new Mutex();
-        private const int numIterations = 1;
-        private const int numThreads = 3;
-
-        static void Main()
+        // Create the threads that will use the protected resource.
+        for (int i = 0; i < numThreads; i++)
         {
-            //创建将使用受保护资源的线程。
-            for (int i = 0; i < numThreads; i++)
-            {
-                Thread newThread = new Thread(new ThreadStart(ThreadProc));
-                newThread.Name = String.Format("Thread{0}", i + 1);
-                newThread.Start();
-            }
-
-            //主线程退出，但应用程序继续运行，
-            //直到所有前台线程退出。
+            Thread newThread = new Thread(new ThreadStart(ThreadProc));
+            newThread.Name = String.Format("Thread{0}", i + 1);
+            newThread.Start();
         }
 
-        private static void ThreadProc()
+        // The main thread exits, but the application continues to
+        // run until all foreground threads have exited.
+    }
+
+    private static void ThreadProc()
+    {
+        for (int i = 0; i < numIterations; i++)
         {
-            for (int i = 0; i < numIterations; i++)
-            {
-                UseResource();
-            }
-        }
-
-        //此方法表示必须同步的资源，
-        //以便一次只能进入一个线程。
-        private static void UseResource()
-        {
-            // 等到安全的时候再进去。
-            Console.WriteLine("{0} 正在请求互斥锁",
-                              Thread.CurrentThread.Name);
-            mut.WaitOne();
-
-            Console.WriteLine("{0} 已进入保护区",
-                              Thread.CurrentThread.Name);
-
-            // 在这里放置访问不可重入资源的代码。
-
-            // 模拟一些工作。
-            Thread.Sleep(500);
-
-            Console.WriteLine("{0} 要离开保护区",
-                Thread.CurrentThread.Name);
-
-            // Release the Mutex.
-            mut.ReleaseMutex();
-            Console.WriteLine("{0} 已经释放了互斥锁",
-                Thread.CurrentThread.Name);
+            UseResource();
         }
     }
+
+    // This method represents a resource that must be synchronized
+    // so that only one thread at a time can enter.
+    private static void UseResource()
+    {
+        // Wait until it is safe to enter.
+        Console.WriteLine("{0} is requesting the mutex",
+                          Thread.CurrentThread.Name);
+        mut.WaitOne();
+
+        Console.WriteLine("{0} has entered the protected area",
+                          Thread.CurrentThread.Name);
+
+        // Place code to access non-reentrant resources here.
+
+        // Simulate some work.
+        Thread.Sleep(500);
+
+        Console.WriteLine("{0} is leaving the protected area",
+            Thread.CurrentThread.Name);
+
+        // Release the Mutex.
+        mut.ReleaseMutex();
+        Console.WriteLine("{0} has released the mutex",
+            Thread.CurrentThread.Name);
+    }
 }
+// The example displays output like the following:
+//       Thread1 is requesting the mutex
+//       Thread2 is requesting the mutex
+//       Thread1 has entered the protected area
+//       Thread3 is requesting the mutex
+//       Thread1 is leaving the protected area
+//       Thread1 has released the mutex
+//       Thread3 has entered the protected area
+//       Thread3 is leaving the protected area
+//       Thread3 has released the mutex
+//       Thread2 has entered the protected area
+//       Thread2 is leaving the protected area
+//       Thread2 has released the mutex

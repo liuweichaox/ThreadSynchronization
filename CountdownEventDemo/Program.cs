@@ -4,68 +4,66 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace CountdownEventDemo
+class Example
 {
-    class Program
+    static async Task Main()
     {
-        static async Task Main()
+        // Initialize a queue and a CountdownEvent
+        ConcurrentQueue<int> queue = new ConcurrentQueue<int>(Enumerable.Range(0, 10000));
+        CountdownEvent cde = new CountdownEvent(10000); // initial count = 10000
+
+        // This is the logic for all queue consumers
+        Action consumer = () =>
         {
-            // 初始化一个队列和一个CountdownEvent
-            ConcurrentQueue<int> queue = new ConcurrentQueue<int>(Enumerable.Range(0, 10000));
-            CountdownEvent cde = new CountdownEvent(10000); //初始计数= 10000
+            int local;
+            // decrement CDE count once for each element consumed from queue
+            while (queue.TryDequeue(out local)) cde.Signal();
+        };
 
-            // 这是所有队列使用者的逻辑
-            Action consumer = () =>
-            {
-                int local;
-                // 对于从队列中消耗的每个元素，CDE计数递减一次
-                while (queue.TryDequeue(out local)) cde.Signal();
-            };
+        // Now empty the queue with a couple of asynchronous tasks
+        Task t1 = Task.Factory.StartNew(consumer);
+        Task t2 = Task.Factory.StartNew(consumer);
 
-            // 现在用两个异步任务清空队列
-            Task t1 = Task.Factory.StartNew(consumer);
-            Task t2 = Task.Factory.StartNew(consumer);
+        // And wait for queue to empty by waiting on cde
+        cde.Wait(); // will return when cde count reaches 0
 
-            // 通过等待cde来等待队列清空
-            cde.Wait(); // 当cde计数达到0时返回
+        Console.WriteLine("Done emptying queue.  InitialCount={0}, CurrentCount={1}, IsSet={2}",
+            cde.InitialCount, cde.CurrentCount, cde.IsSet);
 
-            Console.WriteLine("Done emptying queue.  InitialCount={0}, CurrentCount={1}, IsSet={2}",
-                cde.InitialCount, cde.CurrentCount, cde.IsSet);
+        // Proper form is to wait for the tasks to complete, even if you that their work
+        // is done already.
+        await Task.WhenAll(t1, t2);
 
-            //正确的形式是等待任务完成，即使你认为他们的工作已经完成。
-            await Task.WhenAll(t1, t2);
+        // Resetting will cause the CountdownEvent to un-set, and resets InitialCount/CurrentCount
+        // to the specified value
+        cde.Reset(10);
 
-            //重置将导致CountdownEvent取消设置，并将InitialCount/CurrentCount重置为指定值
-            cde.Reset(10);
+        // AddCount will affect the CurrentCount, but not the InitialCount
+        cde.AddCount(2);
 
-            //但currentAddCount不会影响InitialCount
-            cde.AddCount(2);
+        Console.WriteLine("After Reset(10), AddCount(2): InitialCount={0}, CurrentCount={1}, IsSet={2}",
+            cde.InitialCount, cde.CurrentCount, cde.IsSet);
 
-            Console.WriteLine("After Reset(10), AddCount(2): InitialCount={0}, CurrentCount={1}, IsSet={2}",
-                cde.InitialCount, cde.CurrentCount, cde.IsSet);
-
-            //现在尝试取消等待
-            CancellationTokenSource cts = new CancellationTokenSource();
-            cts.Cancel(); //取消CancellationTokenSource
-            try
-            {
-                cde.Wait(cts.Token);
-            }
-            catch (OperationCanceledException)
-            {
-                Console.WriteLine("cde.Wait(preCanceledToken) threw OCE, as expected");
-            }
-            finally
-            {
-                cts.Dispose();
-            }
-            //完成后释放CountdownEvent是很好的。
-            cde.Dispose();
+        // Now try waiting with cancellation
+        CancellationTokenSource cts = new CancellationTokenSource();
+        cts.Cancel(); // cancels the CancellationTokenSource
+        try
+        {
+            cde.Wait(cts.Token);
         }
+        catch (OperationCanceledException)
+        {
+            Console.WriteLine("cde.Wait(preCanceledToken) threw OCE, as expected");
+        }
+        finally
+        {
+            cts.Dispose();
+        }
+        // It's good to release a CountdownEvent when you're done with it.
+        cde.Dispose();
     }
-    // 示例显示如下输出:
-    //    Done emptying queue.  InitialCount=10000, CurrentCount=0, IsSet=True
-    //    After Reset(10), AddCount(2): InitialCount=10, CurrentCount=12, IsSet=False
-    //    如预期的那样，cde.Wait(preCanceledToken)抛出OCE
-
 }
+// The example displays the following output:
+//    Done emptying queue.  InitialCount=10000, CurrentCount=0, IsSet=True
+//    After Reset(10), AddCount(2): InitialCount=10, CurrentCount=12, IsSet=False
+//    cde.Wait(preCanceledToken) threw OCE, as expected

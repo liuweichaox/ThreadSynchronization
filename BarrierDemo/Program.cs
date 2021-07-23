@@ -2,68 +2,65 @@
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace BarrierDemo
+class BarrierDemo
 {
-    class Program
+    // Demonstrates:
+    //      Barrier constructor with post-phase action
+    //      Barrier.AddParticipants()
+    //      Barrier.RemoveParticipant()
+    //      Barrier.SignalAndWait(), incl. a BarrierPostPhaseException being thrown
+    static void BarrierSample()
     {
-        //演示：
-        //具有后阶段作用的屏障建造器
-        //      Barrier.add参与者()
-        //      障碍物移除参与者()
-        //      障碍物、信号灯和等待（），包括抛出的BarrierPostPhaseException
-        static void Main()
+        int count = 0;
+
+        // Create a barrier with three participants
+        // Provide a post-phase action that will print out certain information
+        // And the third time through, it will throw an exception
+        Barrier barrier = new Barrier(3, (b) =>
         {
-            int count = 0;
+            Console.WriteLine("Post-Phase action: count={0}, phase={1}", count, b.CurrentPhaseNumber);
+            if (b.CurrentPhaseNumber == 2) throw new Exception("D'oh!");
+        });
 
-            //设一道屏障，由三名参与者组成
-            //提供将打印出某些信息的后阶段操作
-            //第三次通过时，它将抛出一个异常
-            Barrier barrier = new Barrier(3, (b) =>
+        // Nope -- changed my mind.  Let's make it five participants.
+        barrier.AddParticipants(2);
+
+        // Nope -- let's settle on four participants.
+        barrier.RemoveParticipant();
+
+        // This is the logic run by all participants
+        Action action = () =>
+        {
+            Interlocked.Increment(ref count);
+            barrier.SignalAndWait(); // during the post-phase action, count should be 4 and phase should be 0
+            Interlocked.Increment(ref count);
+            barrier.SignalAndWait(); // during the post-phase action, count should be 8 and phase should be 1
+
+            // The third time, SignalAndWait() will throw an exception and all participants will see it
+            Interlocked.Increment(ref count);
+            try
             {
-                Console.WriteLine("Post-Phase action: count={0}, phase={1}", count, b.CurrentPhaseNumber);
-                if (b.CurrentPhaseNumber == 2) throw new Exception("D'oh!");
-            });
-
-            // Nope -- 改变我的主意了。 让它成为五个参与者。
-            barrier.AddParticipants(2);
-
-            // Nope -- 让我们确定四个参与者。
-            barrier.RemoveParticipant();
-
-            // 这是所有参与者运行的逻辑
-            Action action = () =>
+                barrier.SignalAndWait();
+            }
+            catch (BarrierPostPhaseException bppe)
             {
-                Interlocked.Increment(ref count);
-                barrier.SignalAndWait(); // 在后期操作中，count应该是4,phase应该是0
-                Interlocked.Increment(ref count);
-                barrier.SignalAndWait(); // 在后期操作中，count应该是8,phase应该是1
+                Console.WriteLine("Caught BarrierPostPhaseException: {0}", bppe.Message);
+            }
 
-                // 第三次，SignalAndWait()将抛出一个异常，所有参与者都将看到它
-                Interlocked.Increment(ref count);
-                try
-                {
-                    barrier.SignalAndWait();
-                }
-                catch (BarrierPostPhaseException bppe)
-                {
-                    Console.WriteLine("Caught BarrierPostPhaseException: {0}", bppe.Message);
-                }
+            // The fourth time should be hunky-dory
+            Interlocked.Increment(ref count);
+            barrier.SignalAndWait(); // during the post-phase action, count should be 16 and phase should be 3
+        };
 
-                // 第四次应该很顺利
-                Interlocked.Increment(ref count);
-                barrier.SignalAndWait(); // 在后期操作中，count应该是16，而phase应该是3
-            };
+        // Now launch 4 parallel actions to serve as 4 participants
+        Parallel.Invoke(action, action, action, action);
 
-            // 现在启动4个并行的动作作为4个参与者
-            Parallel.Invoke(action, action, action, action);
+        // This (5 participants) would cause an exception:
+        // Parallel.Invoke(action, action, action, action, action);
+        //      "System.InvalidOperationException: The number of threads using the barrier
+        //      exceeded the total number of registered participants."
 
-            //这（5个参与者）将导致异常：
-            // Parallel.Invoke（action，action，action，action，action）;
-            //System.InvalidOperationException：使用屏障的线程数
-            //超出了注册参与者的总数。
-
-            // 使用完屏障后，最好将其处理掉。
-            barrier.Dispose();
-        }
+        // It's good form to Dispose() a barrier when you're done with it.
+        barrier.Dispose();
     }
 }

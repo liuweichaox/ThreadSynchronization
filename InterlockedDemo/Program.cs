@@ -1,11 +1,11 @@
 ﻿using System;
 using System.Threading;
 
-namespace InterlockedDemo
+namespace InterlockedExchange_Example
 {
-    class Program
+    class MyInterlockedExchangeExampleClass
     {
-        // 0为false，1为true。
+        //0 for false, 1 for true.
         private static int usingResource = 0;
 
         private const int numThreadIterations = 5;
@@ -21,7 +21,7 @@ namespace InterlockedDemo
                 myThread = new Thread(new ThreadStart(MyThreadProc));
                 myThread.Name = String.Format("Thread{0}", i + 1);
 
-                //等待下一个线程开始之前的随机时间。
+                //Wait a random amount of time before starting next thread.
                 Thread.Sleep(rnd.Next(0, 1000));
                 myThread.Start();
             }
@@ -33,27 +33,27 @@ namespace InterlockedDemo
             {
                 UseResource();
 
-                //等待1秒钟，然后再尝试下一次。
+                //Wait 1 second before next attempt.
                 Thread.Sleep(1000);
             }
         }
 
-        // 一个拒绝再进入的简单方法；
+        //A simple method that denies reentrancy.
         static bool UseResource()
         {
-            //0表示该方法未被使用。
+            //0 indicates that the method is not in use.
             if (0 == Interlocked.Exchange(ref usingResource, 1))
             {
                 Console.WriteLine("{0} acquired the lock", Thread.CurrentThread.Name);
 
-                //访问非线程安全资源的代码将在这里。
+                //Code to access a resource that is not thread safe would go here.
 
-                //模拟一些工作
+                //Simulate some work
                 Thread.Sleep(500);
 
                 Console.WriteLine("{0} exiting lock", Thread.CurrentThread.Name);
 
-                //释放锁
+                //Release the lock
                 Interlocked.Exchange(ref usingResource, 0);
                 return true;
             }

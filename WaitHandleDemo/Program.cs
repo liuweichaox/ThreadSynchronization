@@ -1,53 +1,62 @@
 ﻿using System;
 using System.Threading;
 
-namespace WaitHandleDemo
+public sealed class App
 {
-    class Program
+    // Define an array with two AutoResetEvent WaitHandles.
+    static WaitHandle[] waitHandles = new WaitHandle[]
     {
-        // 定义一个带有两个AutoResetEvent WaitHandles的数组.
-        static WaitHandle[] waitHandles = new WaitHandle[]
-        {
         new AutoResetEvent(false),
         new AutoResetEvent(false)
-        };
+    };
 
-        // 定义用于测试的随机数生成器.
-        static Random r = new Random();
+    // Define a random number generator for testing.
+    static Random r = new Random();
 
-        static void Main()
-        {
-            //在两个不同的线程上排列两个任务;
-            //等待，直到所有的任务完成。
-            DateTime dt = DateTime.Now;
-            Console.WriteLine("主线程正在等待这两个任务的完成.");
-            ThreadPool.QueueUserWorkItem(new WaitCallback(DoTask), waitHandles[0]);
-            ThreadPool.QueueUserWorkItem(new WaitCallback(DoTask), waitHandles[1]);
-            WaitHandle.WaitAll(waitHandles);
-            //下面显示的时间应该与最长的任务匹配.
-            Console.WriteLine("两个任务都完成了 (等待时间={0})",
-                (DateTime.Now - dt).TotalMilliseconds);
+    static void Main()
+    {
+        // Queue up two tasks on two different threads;
+        // wait until all tasks are completed.
+        DateTime dt = DateTime.Now;
+        Console.WriteLine("Main thread is waiting for BOTH tasks to complete.");
+        ThreadPool.QueueUserWorkItem(new WaitCallback(DoTask), waitHandles[0]);
+        ThreadPool.QueueUserWorkItem(new WaitCallback(DoTask), waitHandles[1]);
+        WaitHandle.WaitAll(waitHandles);
+        // The time shown below should match the longest task.
+        Console.WriteLine("Both tasks are completed (time waited={0})",
+            (DateTime.Now - dt).TotalMilliseconds);
 
-            //在两个不同的线程上排列两个任务;
-            //等待任务完成。
-            dt = DateTime.Now;
-            Console.WriteLine();
-            Console.WriteLine("主线程正在等待任一任务的完成.");
-            ThreadPool.QueueUserWorkItem(new WaitCallback(DoTask), waitHandles[0]);
-            ThreadPool.QueueUserWorkItem(new WaitCallback(DoTask), waitHandles[1]);
-            int index = WaitHandle.WaitAny(waitHandles);
-            // 下面显示的时间应该匹配最短的任务.
-            Console.WriteLine("任务 {0} 最先完成 (等待时间={1}).",
-                index + 1, (DateTime.Now - dt).TotalMilliseconds);
-        }
+        // Queue up two tasks on two different threads;
+        // wait until any tasks are completed.
+        dt = DateTime.Now;
+        Console.WriteLine();
+        Console.WriteLine("The main thread is waiting for either task to complete.");
+        ThreadPool.QueueUserWorkItem(new WaitCallback(DoTask), waitHandles[0]);
+        ThreadPool.QueueUserWorkItem(new WaitCallback(DoTask), waitHandles[1]);
+        int index = WaitHandle.WaitAny(waitHandles);
+        // The time shown below should match the shortest task.
+        Console.WriteLine("Task {0} finished first (time waited={1}).",
+            index + 1, (DateTime.Now - dt).TotalMilliseconds);
+    }
 
-        static void DoTask(Object state)
-        {
-            AutoResetEvent are = (AutoResetEvent)state;
-            int time = 1000 * r.Next(2, 10);
-            Console.WriteLine("执行任务的时间为 {0} 毫秒.", time);
-            Thread.Sleep(time);
-            are.Set();
-        }
+    static void DoTask(Object state)
+    {
+        AutoResetEvent are = (AutoResetEvent)state;
+        int time = 1000 * r.Next(2, 10);
+        Console.WriteLine("Performing a task for {0} milliseconds.", time);
+        Thread.Sleep(time);
+        are.Set();
     }
 }
+
+// This code produces output similar to the following:
+//
+//  Main thread is waiting for BOTH tasks to complete.
+//  Performing a task for 7000 milliseconds.
+//  Performing a task for 4000 milliseconds.
+//  Both tasks are completed (time waited=7064.8052)
+//
+//  The main thread is waiting for either task to complete.
+//  Performing a task for 2000 milliseconds.
+//  Performing a task for 2000 milliseconds.
+//  Task 1 finished first (time waited=2000.6528).

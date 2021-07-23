@@ -1,83 +1,81 @@
 ﻿using System;
 using System.Threading;
 using System.Threading.Tasks;
-
-namespace ManualResetEventSlimDemo
+class MRESDemo
 {
-    class Program
+
+    static void Main()
     {
-        static void Main()
+        MRES_SetWaitReset();
+        MRES_SpinCountWaitHandle();
+    }
+    // Demonstrates:
+    //      ManualResetEventSlim construction
+    //      ManualResetEventSlim.Wait()
+    //      ManualResetEventSlim.Set()
+    //      ManualResetEventSlim.Reset()
+    //      ManualResetEventSlim.IsSet
+    static void MRES_SetWaitReset()
+    {
+        ManualResetEventSlim mres1 = new ManualResetEventSlim(false); // initialize as unsignaled
+        ManualResetEventSlim mres2 = new ManualResetEventSlim(false); // initialize as unsignaled
+        ManualResetEventSlim mres3 = new ManualResetEventSlim(true);  // initialize as signaled
+
+        // Start an asynchronous Task that manipulates mres3 and mres2
+        var observer = Task.Factory.StartNew(() =>
         {
-            MRES_SetWaitReset();
-            MRES_SpinCountWaitHandle();
-        }
-        // 演示:
-        //      ManualResetEventSlim construction
-        //      ManualResetEventSlim.Wait()
-        //      ManualResetEventSlim.Set()
-        //      ManualResetEventSlim.Reset()
-        //      ManualResetEventSlim.IsSet
-        static void MRES_SetWaitReset()
+            mres1.Wait();
+            Console.WriteLine("observer sees signaled mres1!");
+            Console.WriteLine("observer resetting mres3...");
+            mres3.Reset(); // should switch to unsignaled
+            Console.WriteLine("observer signalling mres2");
+            mres2.Set();
+        });
+
+        Console.WriteLine("main thread: mres3.IsSet = {0} (should be true)", mres3.IsSet);
+        Console.WriteLine("main thread signalling mres1");
+        mres1.Set(); // This will "kick off" the observer Task
+        mres2.Wait(); // This won't return until observer Task has finished resetting mres3
+        Console.WriteLine("main thread sees signaled mres2!");
+        Console.WriteLine("main thread: mres3.IsSet = {0} (should be false)", mres3.IsSet);
+
+        // It's good form to Dispose() a ManualResetEventSlim when you're done with it
+        observer.Wait(); // make sure that this has fully completed
+        mres1.Dispose();
+        mres2.Dispose();
+        mres3.Dispose();
+    }
+
+    // Demonstrates:
+    //      ManualResetEventSlim construction w/ SpinCount
+    //      ManualResetEventSlim.WaitHandle
+    static void MRES_SpinCountWaitHandle()
+    {
+        // Construct a ManualResetEventSlim with a SpinCount of 1000
+        // Higher spincount => longer time the MRES will spin-wait before taking lock
+        ManualResetEventSlim mres1 = new ManualResetEventSlim(false, 1000);
+        ManualResetEventSlim mres2 = new ManualResetEventSlim(false, 1000);
+
+        Task bgTask = Task.Factory.StartNew(() =>
         {
-            ManualResetEventSlim mres1 = new ManualResetEventSlim(false); // 初始化为无信号
-            ManualResetEventSlim mres2 = new ManualResetEventSlim(false); // 初始化为无信号
-            ManualResetEventSlim mres3 = new ManualResetEventSlim(true);  // 初始化为有信号
+            // Just wait a little
+            Thread.Sleep(100);
 
-            // 启动一个异步任务，操作mres3和mres2。
-            var observer = Task.Factory.StartNew(() =>
-            {
-                mres1.Wait();
-                Console.WriteLine("观察者看到信号mres1！");
-                Console.WriteLine("观察者重置mres3 ...");
-                mres3.Reset(); // 应该切换到无信号状态
-                Console.WriteLine("观察者信号mres2");
-                mres2.Set();
-            });
+            // Now signal both MRESes
+            Console.WriteLine("Task signalling both MRESes");
+            mres1.Set();
+            mres2.Set();
+        });
 
-            Console.WriteLine("线程: mres3.IsSet = {0} (应该为true)", mres3.IsSet);
-            Console.WriteLine("主线程信号mres1");
-            mres1.Set(); // 这将“启动”观察者任务
-            mres2.Wait(); // 在观察者任务完成重新设置mres3之前，它不会返回
-            Console.WriteLine("主线程看到信号mres2!");
-            Console.WriteLine("线程: mres3.IsSet = {0} (应该为true)", mres3.IsSet);
+        // A common use of MRES.WaitHandle is to use MRES as a participant in 
+        // WaitHandle.WaitAll/WaitAny.  Note that accessing MRES.WaitHandle will
+        // result in the unconditional inflation of the underlying ManualResetEvent.
+        WaitHandle.WaitAll(new WaitHandle[] { mres1.WaitHandle, mres2.WaitHandle });
+        Console.WriteLine("WaitHandle.WaitAll(mres1.WaitHandle, mres2.WaitHandle) completed.");
 
-            // 当你完成一个ManualResetEventSlim时，Dispose()是一种好的形式。
-            observer.Wait(); // 确保这已经完全完成
-            mres1.Dispose();
-            mres2.Dispose();
-            mres3.Dispose();
-        }
-
-        // 演示:
-        //      ManualResetEventSlim construction w/ SpinCount
-        //      ManualResetEventSlim.WaitHandle
-        static void MRES_SpinCountWaitHandle()
-        {
-            // 构造一个SpinResetEventSlim，SpinCount为1000
-            // Higher spincount => 锁定前，MRES会有更长的旋转等待时间。
-            ManualResetEventSlim mres1 = new ManualResetEventSlim(false, 1000);
-            ManualResetEventSlim mres2 = new ManualResetEventSlim(false, 1000);
-
-            Task bgTask = Task.Factory.StartNew(() =>
-            {
-                // 稍等片刻
-                Thread.Sleep(100);
-
-                // 现在两个都发信号
-                Console.WriteLine("任务同时发送两个MRES");
-                mres1.Set();
-                mres2.Set();
-            });
-
-            // MRES.WaitHandle的常见用法是将MRES用作WaitHandle.WaitAll / WaitAny的参与者。 
-            // 请注意，访问MRES.WaitHandle将导致基础ManualResetEvent的无条件膨胀。
-            WaitHandle.WaitAll(new WaitHandle[] { mres1.WaitHandle, mres2.WaitHandle });
-            Console.WriteLine("WaitHandle.WaitAll(mres1.WaitHandle, mres2.WaitHandle) 已完成.");
-
-            // 清理
-            bgTask.Wait();
-            mres1.Dispose();
-            mres2.Dispose();
-        }
+        // Clean up
+        bgTask.Wait();
+        mres1.Dispose();
+        mres2.Dispose();
     }
 }
