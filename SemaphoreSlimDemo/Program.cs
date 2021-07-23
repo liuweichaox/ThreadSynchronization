@@ -2,63 +2,79 @@
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace SemaphoreSlimDemo
+public class Example
 {
-    public class Program
+    private static SemaphoreSlim semaphore;
+    // A padding interval to make the output more orderly.
+    private static int padding;
+
+    public static void Main()
     {
-        private static SemaphoreSlim semaphore;
-        // 一个填充间隔，使输出更有序。
-        private static int padding;
+        // Create the semaphore.
+        semaphore = new SemaphoreSlim(0, 3);
+        Console.WriteLine("{0} tasks can enter the semaphore.",
+                          semaphore.CurrentCount);
+        Task[] tasks = new Task[5];
 
-        public static void Main()
+        // Create and start five numbered tasks.
+        for (int i = 0; i <= 4; i++)
         {
-            //创建信号量。
-            semaphore = new SemaphoreSlim(0, 3);
-            Console.WriteLine("{0} tasks can enter the semaphore.",
-                              semaphore.CurrentCount);
-            Task[] tasks = new Task[5];
-
-            // 创建并启动5个编号的任务。
-            for (int i = 0; i <= 4; i++)
+            tasks[i] = Task.Run(() =>
             {
-                tasks[i] = Task.Run(() =>
+                // Each task begins by requesting the semaphore.
+                Console.WriteLine("Task {0} begins and waits for the semaphore.",
+                                  Task.CurrentId);
+
+                int semaphoreCount;
+                semaphore.Wait();
+                try
                 {
-                    // 每个任务都从请求信号量开始。
-                    Console.WriteLine("任务 {0} 开始并等待信号量.",
-                                      Task.CurrentId);
+                    Interlocked.Add(ref padding, 100);
 
-                    int semaphoreCount;
-                    semaphore.Wait();
-                    try
-                    {
-                        Interlocked.Add(ref padding, 100);
+                    Console.WriteLine("Task {0} enters the semaphore.", Task.CurrentId);
 
-                        Console.WriteLine("任务 {0} 进入信号量.", Task.CurrentId);
-
-                        // T任务只睡1+秒。
-                        Thread.Sleep(1000 + padding);
-                    }
-                    finally
-                    {
-                        semaphoreCount = semaphore.Release();
-                    }
-                    Console.WriteLine("任务 {0} 释放信号量;以前的数: {1}.",
-                                      Task.CurrentId, semaphoreCount);
-                });
-            }
-
-            // 等待半秒，允许所有任务开始和停止.
-            Thread.Sleep(500);
-
-            // 将信号量计数恢复到最大值.
-            Console.Write("主线程调用 Release(3) --> ");
-            semaphore.Release(3);
-            Console.WriteLine("{0} 任务可以进入这个信号量.",
-                              semaphore.CurrentCount);
-            // 主线程等待任务完成.
-            Task.WaitAll(tasks);
-
-            Console.WriteLine("主线程退出.");
+                    // The task just sleeps for 1+ seconds.
+                    Thread.Sleep(1000 + padding);
+                }
+                finally
+                {
+                    semaphoreCount = semaphore.Release();
+                }
+                Console.WriteLine("Task {0} releases the semaphore; previous count: {1}.",
+                                  Task.CurrentId, semaphoreCount);
+            });
         }
+
+        // Wait for half a second, to allow all the tasks to start and block.
+        Thread.Sleep(500);
+
+        // Restore the semaphore count to its maximum value.
+        Console.Write("Main thread calls Release(3) --> ");
+        semaphore.Release(3);
+        Console.WriteLine("{0} tasks can enter the semaphore.",
+                          semaphore.CurrentCount);
+        // Main thread waits for the tasks to complete.
+        Task.WaitAll(tasks);
+
+        Console.WriteLine("Main thread exits.");
     }
 }
+// The example displays output like the following:
+//       0 tasks can enter the semaphore.
+//       Task 1 begins and waits for the semaphore.
+//       Task 5 begins and waits for the semaphore.
+//       Task 2 begins and waits for the semaphore.
+//       Task 4 begins and waits for the semaphore.
+//       Task 3 begins and waits for the semaphore.
+//       Main thread calls Release(3) --> 3 tasks can enter the semaphore.
+//       Task 4 enters the semaphore.
+//       Task 1 enters the semaphore.
+//       Task 3 enters the semaphore.
+//       Task 4 releases the semaphore; previous count: 0.
+//       Task 2 enters the semaphore.
+//       Task 1 releases the semaphore; previous count: 0.
+//       Task 3 releases the semaphore; previous count: 0.
+//       Task 5 enters the semaphore.
+//       Task 2 releases the semaphore; previous count: 1.
+//       Task 5 releases the semaphore; previous count: 2.
+//       Main thread exits.

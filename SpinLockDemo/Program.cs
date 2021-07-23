@@ -11,7 +11,7 @@ class SpinLockDemo
     //      Default SpinLock construction ()
     //      SpinLock.Enter(ref bool)
     //      SpinLock.Exit()
-    static void SpinLockSample1()
+    static void Main()
     {
         SpinLock sl = new SpinLock();
 

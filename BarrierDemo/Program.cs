@@ -9,7 +9,7 @@ class BarrierDemo
     //      Barrier.AddParticipants()
     //      Barrier.RemoveParticipant()
     //      Barrier.SignalAndWait(), incl. a BarrierPostPhaseException being thrown
-    static void BarrierSample()
+    static void Main()
     {
         int count = 0;
 
