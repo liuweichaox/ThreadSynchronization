@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio Version 16
-VisualStudioVersion = 16.0.30711.63
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31423.177
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "LockDemo", "LockDemo\LockDemo.csproj", "{36244916-6598-429B-9EEB-C7EE628DEBB1}"
 EndProject
@@ -35,7 +35,15 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SemaphoreSlimDemo", "Semaph
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ReaderWriterLockSlimDemo", "ReaderWriterLockSlimDemo\ReaderWriterLockSlimDemo.csproj", "{AA488CE4-4010-4D5E-BD41-551D2E47E67A}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BackgroundWorkerDemo", "BackgroundWorkerDemo\BackgroundWorkerDemo.csproj", "{82DA6057-F18E-4BDA-A4F1-09F336D6BB29}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "BackgroundWorkerDemo", "BackgroundWorkerDemo\BackgroundWorkerDemo.csproj", "{82DA6057-F18E-4BDA-A4F1-09F336D6BB29}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AsyncLocalDemo", "AsyncLocalDemo\AsyncLocalDemo.csproj", "{30ED27C1-705A-4E97-8637-1185266E4A15}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ThreadLocalDemo", "ThreadLocalDemo\ThreadLocalDemo.csproj", "{1552CD20-82CB-4961-AB1E-92BF90A28C02}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TimerDemo", "TimerDemo\TimerDemo.csproj", "{5C1C14D9-BBA4-4EEB-86A2-01B6A42B6958}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TimeoutDemo", "TimeoutDemo\TimeoutDemo.csproj", "{FA2293C6-25AD-4DEC-BBDA-B044B946B2BC}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -111,6 +119,22 @@ Global
 		{82DA6057-F18E-4BDA-A4F1-09F336D6BB29}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{82DA6057-F18E-4BDA-A4F1-09F336D6BB29}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{82DA6057-F18E-4BDA-A4F1-09F336D6BB29}.Release|Any CPU.Build.0 = Release|Any CPU
+		{30ED27C1-705A-4E97-8637-1185266E4A15}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{30ED27C1-705A-4E97-8637-1185266E4A15}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{30ED27C1-705A-4E97-8637-1185266E4A15}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{30ED27C1-705A-4E97-8637-1185266E4A15}.Release|Any CPU.Build.0 = Release|Any CPU
+		{1552CD20-82CB-4961-AB1E-92BF90A28C02}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{1552CD20-82CB-4961-AB1E-92BF90A28C02}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{1552CD20-82CB-4961-AB1E-92BF90A28C02}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{1552CD20-82CB-4961-AB1E-92BF90A28C02}.Release|Any CPU.Build.0 = Release|Any CPU
+		{5C1C14D9-BBA4-4EEB-86A2-01B6A42B6958}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{5C1C14D9-BBA4-4EEB-86A2-01B6A42B6958}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{5C1C14D9-BBA4-4EEB-86A2-01B6A42B6958}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{5C1C14D9-BBA4-4EEB-86A2-01B6A42B6958}.Release|Any CPU.Build.0 = Release|Any CPU
+		{FA2293C6-25AD-4DEC-BBDA-B044B946B2BC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{FA2293C6-25AD-4DEC-BBDA-B044B946B2BC}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{FA2293C6-25AD-4DEC-BBDA-B044B946B2BC}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{FA2293C6-25AD-4DEC-BBDA-B044B946B2BC}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
